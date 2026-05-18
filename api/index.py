@@ -5,13 +5,19 @@ DATA_PATH = os.path.join(os.path.dirname(__file__), "data.json")
 with open(DATA_PATH) as f:
     DATA = json.load(f)
 
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Expose-Headers": "Access-Control-Allow-Origin",
+}
+
 class handler(BaseHTTPRequestHandler):
 
     def _send(self, code, body):
         self.send_response(code)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        for k, v in CORS_HEADERS.items():
+            self.send_header(k, v)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps(body).encode())
