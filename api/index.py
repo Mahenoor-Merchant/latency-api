@@ -5,24 +5,19 @@ DATA_PATH = os.path.join(os.path.dirname(__file__), "data.json")
 with open(DATA_PATH) as f:
     DATA = json.load(f)
 
-CORS = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-}
-
 class handler(BaseHTTPRequestHandler):
 
-    def _send(self, code, body, extra_headers={}):
+    def _send(self, code, body):
         self.send_response(code)
-        for k, v in {**CORS, **extra_headers}.items():
-            self.send_header(k, v)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.send_header("Content-Type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps(body).encode())
 
     def do_OPTIONS(self):
-        self._send(200, "ok")
+        self._send(200, {})
 
     def do_GET(self):
         self._send(200, {"status": "ok"})
@@ -32,7 +27,6 @@ class handler(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(length))
         regions = body["regions"]
         threshold = body["threshold_ms"]
-
         result = {}
         for region in regions:
             records = [r for r in DATA if r["region"] == region]
@@ -47,5 +41,4 @@ class handler(BaseHTTPRequestHandler):
                 "avg_uptime":  round(float(np.mean(uptimes)), 2),
                 "breaches":    int(np.sum(latencies > threshold)),
             }
-
         self._send(200, result)
