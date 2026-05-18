@@ -1,18 +1,22 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import numpy as np
 import json, os
 
 app = FastAPI()
 
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Load data
 DATA_PATH = os.path.join(os.path.dirname(__file__), "data.json")
 with open(DATA_PATH) as f:
     DATA = json.load(f)
@@ -21,9 +25,24 @@ class Query(BaseModel):
     regions: list[str]
     threshold_ms: float
 
+# Explicitly handle OPTIONS preflight (Vercel needs this)
+@app.options("/")
+def options():
+    return JSONResponse(
+        content="OK",
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
 @app.get("/")
 def root():
-    return {"status": "ok"}
+    return JSONResponse(
+        content={"status": "ok"},
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
 
 @app.post("/")
 def analyze(q: Query):
@@ -41,4 +60,7 @@ def analyze(q: Query):
             "avg_uptime":  round(float(np.mean(uptimes)), 2),
             "breaches":    int(np.sum(latencies > q.threshold_ms)),
         }
-    return result
+    return JSONResponse(
+        content=result,
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
