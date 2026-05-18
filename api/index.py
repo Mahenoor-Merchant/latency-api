@@ -47,4 +47,5 @@ class handler(BaseHTTPRequestHandler):
                 "avg_uptime":  round(float(np.mean(uptimes)), 2),
                 "breaches":    int(np.sum(latencies > threshold)),
             }
-        self._send(200, result)
+        # ← wrap in {"regions": {...}}
+        self._send(200, {"regions": result})
